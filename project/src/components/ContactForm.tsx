@@ -11,6 +11,7 @@ const ContactForm: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const [ref, inView] = useInView({
     triggerOnce: true,
@@ -23,11 +24,6 @@ const ContactForm: React.FC = () => {
       title: 'Our Location',
       details: 'Kolkata, West Bengal, India',
     },
-    // {
-    //   icon: <Phone className="w-6 h-6 text-primary-500" />,
-    //   title: 'Phone Number',
-    //   details: '+91 1234567890',
-    // },
     {
       icon: <Mail className="w-6 h-6 text-primary-500" />,
       title: 'Email Address',
@@ -35,7 +31,7 @@ const ContactForm: React.FC = () => {
     },
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -43,46 +39,45 @@ const ContactForm: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, you would send the form data to a server here
+    setError('');
+    
     try {
       const response = await fetch('https://script.google.com/macros/s/AKfycbwqXC1LqFyPmZOqKtEeD8uHPJh-A8S2f42AVx1mv017wuSLYsOy2cjDfGctCQjNwIM/exec', {
+        
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          timestamp: new Date().toISOString(),
           name: formData.name,
           email: formData.email,
           subject: formData.subject,
           message: formData.message,
         }),
       });
-    
-      const result = await response.text(); // Since the server just returns plain "Success"
-    
-      if (result === 'Success') {
-        setSubmitted(true);
-        // Optionally reset form fields here
-      } else {
-        console.error('Submission failed:', result);
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-    }
-    // console.log('Form submitted:', formData);
-    setSubmitted(true);
-    // Reset form after submission
-    setTimeout(() => {
+
+      setSubmitted(true);
       setFormData({
         name: '',
         email: '',
         subject: '',
         message: '',
       });
-      setSubmitted(false);
-    }, 3000);
+
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 5000);
+    } catch (err) {
+      setError('Failed to submit form. Please try again later.');
+      console.error('Error submitting form:', err);
+    }
   };
 
   return (
@@ -139,6 +134,11 @@ const ContactForm: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="bg-red-50 text-red-500 p-4 rounded-md">
+                    {error}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-1">
