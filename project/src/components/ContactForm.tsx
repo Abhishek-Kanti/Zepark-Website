@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Send, MapPin, Phone, Mail } from 'lucide-react';
+import { Send, MapPin, Mail } from 'lucide-react';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +12,7 @@ const ContactForm = () => {
   });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [ref, inView] = useInView({
     triggerOnce: true,
@@ -42,26 +43,25 @@ const ContactForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
     
-    // Create form data object - this works better with Google Apps Script
-    const formDataObj = new FormData();
-    formDataObj.append('timestamp', new Date().toISOString());
-    formDataObj.append('name', formData.name);
-    formDataObj.append('email', formData.email);
-    formDataObj.append('subject', formData.subject);
-    formDataObj.append('message', formData.message);
-
     // The deployed Apps Script web app URL
     const scriptURL = 'https://script.google.com/macros/s/AKfycbwqXC1LqFyPmZOqKtEeD8uHPJh-A8S2f42AVx1mv017wuSLYsOy2cjDfGctCQjNwIM/exec';
 
     try {
-      // Use no-cors mode to avoid CORS issues
-      const response = await fetch(scriptURL, {
-        method: 'POST',
-        mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
-        body: formDataObj,
+      // Method 1: Using URL search params (more reliable with no-cors)
+      const url = new URL(scriptURL);
+      url.searchParams.append('timestamp', new Date().toISOString());
+      url.searchParams.append('name', formData.name);
+      url.searchParams.append('email', formData.email);
+      url.searchParams.append('subject', formData.subject);
+      url.searchParams.append('message', formData.message);
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET', // Using GET with params instead of POST for better compatibility
+        mode: 'no-cors',
       });
-
+      
       // Since no-cors doesn't return readable response, we assume success
       setSubmitted(true);
       setFormData({
@@ -77,6 +77,8 @@ const ContactForm = () => {
     } catch (err) {
       setError('Failed to submit form. Please try again later.');
       console.error('Error submitting form:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,10 +202,17 @@ const ContactForm = () => {
                 <div>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
                   >
-                    <Send className="w-5 h-5 mr-2" />
-                    Send Message
+                    {isSubmitting ? (
+                      'Sending...'
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 mr-2" />
+                        Send Message
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
