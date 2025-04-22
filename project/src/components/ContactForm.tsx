@@ -45,24 +45,22 @@ const ContactForm = () => {
     setError('');
     setIsSubmitting(true);
     
-    // The deployed Apps Script web app URL
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwqXC1LqFyPmZOqKtEeD8uHPJh-A8S2f42AVx1mv017wuSLYsOy2cjDfGctCQjNwIM/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwnPnhAk7b3DHH01c4SIuDKF4ZupWpQUalbI-Cw8aElcAMgoh-zElZge4kuYyWGcBe-/exec';
 
     try {
-      // Method 1: Using URL search params (more reliable with no-cors)
-      const url = new URL(scriptURL);
-      url.searchParams.append('timestamp', new Date().toISOString());
-      url.searchParams.append('name', formData.name);
-      url.searchParams.append('email', formData.email);
-      url.searchParams.append('subject', formData.subject);
-      url.searchParams.append('message', formData.message);
-      
-      const response = await fetch(url.toString(), {
-        method: 'GET', // Using GET with params instead of POST for better compatibility
-        mode: 'no-cors',
+      const formDataToSend = new FormData();
+      formDataToSend.append('timestamp', new Date().toISOString());
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('subject', formData.subject);
+      formDataToSend.append('message', formData.message);
+
+      const response = await fetch(scriptURL, {
+        method: 'POST',
+        body: formDataToSend,
+        mode: 'no-cors'
       });
-      
-      // Since no-cors doesn't return readable response, we assume success
+
       setSubmitted(true);
       setFormData({
         name: '',
