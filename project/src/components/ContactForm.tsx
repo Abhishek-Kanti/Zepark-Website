@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Send, MapPin, Phone, Mail } from 'lucide-react';
 
-const ContactForm: React.FC = () => {
+const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,7 +31,7 @@ const ContactForm: React.FC = () => {
     },
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -39,30 +39,30 @@ const ContactForm: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
+    // Create form data object - this works better with Google Apps Script
+    const formDataObj = new FormData();
+    formDataObj.append('timestamp', new Date().toISOString());
+    formDataObj.append('name', formData.name);
+    formDataObj.append('email', formData.email);
+    formDataObj.append('subject', formData.subject);
+    formDataObj.append('message', formData.message);
+
+    // The deployed Apps Script web app URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwqXC1LqFyPmZOqKtEeD8uHPJh-A8S2f42AVx1mv017wuSLYsOy2cjDfGctCQjNwIM/exec';
+
     try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbwqXC1LqFyPmZOqKtEeD8uHPJh-A8S2f42AVx1mv017wuSLYsOy2cjDfGctCQjNwIM/exec', {
-        
+      // Use no-cors mode to avoid CORS issues
+      const response = await fetch(scriptURL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-        }),
+        mode: 'no-cors', // This is important for cross-origin requests to Google Apps Script
+        body: formDataObj,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit form');
-      }
-
+      // Since no-cors doesn't return readable response, we assume success
       setSubmitted(true);
       setFormData({
         name: '',
